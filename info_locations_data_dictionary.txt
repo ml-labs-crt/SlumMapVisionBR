@@ -1,0 +1,14 @@
+location: code of the location in the Brazilian census
+xsize, ysize: dimensions in pixels of the rasters/masks.	
+pixels_slum: number of slum pixels in the mask.
+proportion_slums: proportion of slums over all pixels in the image.
+NM_MUNICIP: name of the municipality.
+CD_UF: numerical code of the state where the municipality is located.
+SG_UF: code of the state where the municipality is located.
+Name_UF: name of state where the municipality is locacated.
+startDate, entityId, displayId, cloudCover, spatialBounds, spatialCoverage: information about the satellite imagery.
+RME_DS: name of the municipality in the metropolitan region data.
+RME_CD: code of the metropolitan region.
+RME_NM: name of the metropolitan region.
+metropolitan: whether the locality is in a metropolitan region. 0 means no and 1 means it is in a metropolitan region.
+left_half_slums, left_half_slum_discounting_border, right_half_slums, right_half_slum_discounting_border, proportion_slums_left, proportion_slums_right: information about the number of pixels that are slums on each side of the raster.
