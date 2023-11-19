@@ -34,15 +34,15 @@ keras.backend.set_image_data_format("channels_last")
 now = datetime.now()
 dt_string = now.strftime("%Y%m%d_%H%M%S")
 
-dir_results = Path("../results_"+dt_string)
+dir_results = Path("../results_" + dt_string)
 dir_results.mkdir(parents=True, exist_ok=True)
-dir_graphs = Path("../results_"+dt_string+"/graphs")
+dir_graphs = Path("../results_" + dt_string + "/graphs")
 dir_graphs.mkdir(parents=True, exist_ok=True)
-dir_models = Path("../results_"+dt_string+"/models")
+dir_models = Path("../results_" + dt_string + "/models")
 dir_models.mkdir(parents=True, exist_ok=True)
-dir_logs = Path("../results_"+dt_string+"/logs")
+dir_logs = Path("../results_" + dt_string + "/logs")
 dir_logs.mkdir(parents=True, exist_ok=True)
-dir_rasters = Path("../results_"+dt_string+"/rasters")
+dir_rasters = Path("../results_" + dt_string + "/rasters")
 dir_rasters.mkdir(parents=True, exist_ok=True)
 
 
@@ -122,8 +122,8 @@ def reshape_split(image, kernel_size):
     return tiled_array
 
 
-def tile_data(image, mask, size_tile = 64):      
-    '''
+def tile_data(image, mask, size_tile=64):
+    """
     This function takes an image and a mask and returns the image and mask tiled
     according to the size_tile parameter. The image and mask are reduced to a size
     that is a multiple of size_tile. The image is tiled and the mask is tiled and
@@ -142,25 +142,27 @@ def tile_data(image, mask, size_tile = 64):
     -------
     im_tiled : numpy array
         The tiled image.
-    mask_tiled : numpy array    
+    mask_tiled : numpy array
         The tiled and expanded mask.
-    '''
-    im_red = reduce_image_for_irregular_tile_cutting(
-            image, size_tile, size_tile)
-    mask_red = reduce_image_for_irregular_tile_cutting(
-            mask, size_tile, size_tile)
+    """
+    im_red = reduce_image_for_irregular_tile_cutting(image, size_tile, size_tile)
+    mask_red = reduce_image_for_irregular_tile_cutting(mask, size_tile, size_tile)
     mask_red = np.expand_dims(mask_red, axis=-1)
-    im_tiled = reshape_split(im_red, (size_tile, size_tile)).reshape(-1, size_tile, size_tile, 7)
-    mask_tiled = reshape_split(mask_red, (size_tile, size_tile)).reshape(-1, size_tile, size_tile, 1)
+    im_tiled = reshape_split(im_red, (size_tile, size_tile)).reshape(
+        -1, size_tile, size_tile, 7
+    )
+    mask_tiled = reshape_split(mask_red, (size_tile, size_tile)).reshape(
+        -1, size_tile, size_tile, 1
+    )
     return im_tiled, mask_tiled.astype(np.float32)
 
 
-def augment_slums(norm_train_val, mask_original_train_val, size_tile = 64, n_aug = 1000):
-    '''
+def augment_slums(norm_train_val, mask_original_train_val, size_tile=64, n_aug=1000):
+    """
     This function takes the normalized training and validation data and the original
     masks and returns the augmented data and masks (only slums). The augmented data and masks are
-    created by randomly selecting pixels labeled with 1 from the original masks and then 
-    cropping a patch of the image around them. The default number of augmented data is 1000. 
+    created by randomly selecting pixels labeled with 1 from the original masks and then
+    cropping a patch of the image around them. The default number of augmented data is 1000.
 
     Parameters
     ----------
@@ -175,30 +177,58 @@ def augment_slums(norm_train_val, mask_original_train_val, size_tile = 64, n_aug
     -------
     norm_train_val_aug : numpy array
         The augmented normalized training and validation data.
-    mask_original_train_val_aug : numpy array   
+    mask_original_train_val_aug : numpy array
         The augmented original masks.
-    '''
+    """
     image_channels = norm_train_val.shape[-1]
-    mask_coordinates = np.argwhere(mask_original_train_val == 1)   
-    mask_coordinates = mask_coordinates[(mask_coordinates[:,0]>size_tile//2) & (mask_coordinates[:,0]<mask_original_train_val.shape[0]-size_tile//2) & (mask_coordinates[:,1]>size_tile//2) & (mask_coordinates[:,1]<mask_original_train_val.shape[1]-size_tile//2)]
-    n_samples = min(n_aug,len(mask_coordinates))
-    random_sample = np.random.choice(mask_coordinates.shape[0], n_samples, replace=False)
+    mask_coordinates = np.argwhere(mask_original_train_val == 1)
+    mask_coordinates = mask_coordinates[
+        (mask_coordinates[:, 0] > size_tile // 2)
+        & (mask_coordinates[:, 0] < mask_original_train_val.shape[0] - size_tile // 2)
+        & (mask_coordinates[:, 1] > size_tile // 2)
+        & (mask_coordinates[:, 1] < mask_original_train_val.shape[1] - size_tile // 2)
+    ]
+    n_samples = min(n_aug, len(mask_coordinates))
+    random_sample = np.random.choice(
+        mask_coordinates.shape[0], n_samples, replace=False
+    )
     mask_coordinates = mask_coordinates[random_sample]
-    data_aug = np.zeros((n_samples,size_tile,size_tile, image_channels))
-    mask_aug = np.zeros((n_samples,size_tile,size_tile))
+    data_aug = np.zeros((n_samples, size_tile, size_tile, image_channels))
+    mask_aug = np.zeros((n_samples, size_tile, size_tile))
     for i in range(n_samples):
-        data_aug[i] = norm_train_val[mask_coordinates[i,0]-size_tile//2:mask_coordinates[i,0]+size_tile//2,mask_coordinates[i,1]-size_tile//2:mask_coordinates[i,1]+size_tile//2,:]
-        mask_aug[i] = mask_original_train_val[mask_coordinates[i,0]-size_tile//2:mask_coordinates[i,0]+size_tile//2,mask_coordinates[i,1]-size_tile//2:mask_coordinates[i,1]+size_tile//2]
+        data_aug[i] = norm_train_val[
+            mask_coordinates[i, 0]
+            - size_tile // 2 : mask_coordinates[i, 0]
+            + size_tile // 2,
+            mask_coordinates[i, 1]
+            - size_tile // 2 : mask_coordinates[i, 1]
+            + size_tile // 2,
+            :,
+        ]
+        mask_aug[i] = mask_original_train_val[
+            mask_coordinates[i, 0]
+            - size_tile // 2 : mask_coordinates[i, 0]
+            + size_tile // 2,
+            mask_coordinates[i, 1]
+            - size_tile // 2 : mask_coordinates[i, 1]
+            + size_tile // 2,
+        ]
         # plt.imshow(data_aug[1,:,:,0:3])
         # plt.imshow(mask_aug[1])
     mask_aug = np.expand_dims(mask_aug, axis=-1)
     return data_aug, mask_aug
 
 
-def augment_data(norm_train_val, mask_original_train_val, size_tile = 64, n_samples = 1000, percentage_slum = 0.1):
-    '''	
+def augment_data(
+    norm_train_val,
+    mask_original_train_val,
+    size_tile=64,
+    n_samples=1000,
+    percentage_slum=0.1,
+):
+    """
     This function takes the normalized data and the original
-    masks (not tiles) and returns the augmented data and masks (tiled). 
+    masks (not tiles) and returns the augmented data and masks (tiled).
     The default number of augmented data is 1000.
     The default percentage of slums is 0.1.
 
@@ -221,41 +251,107 @@ def augment_data(norm_train_val, mask_original_train_val, size_tile = 64, n_samp
         The augmented data.
     mask_aug : numpy array
         The augmented masks.
-    '''
-    
+    """
+
     image_channels = norm_train_val.shape[-1]
-    mask_coordinates_slum = np.argwhere(mask_original_train_val == 1)   
-    mask_coordinates_slum = mask_coordinates_slum[(mask_coordinates_slum[:,0]>size_tile//2) & (mask_coordinates_slum[:,0]<mask_original_train_val.shape[0]-size_tile//2) & (mask_coordinates_slum[:,1]>size_tile//2) & (mask_coordinates_slum[:,1]<mask_original_train_val.shape[1]-size_tile//2)]
-    if len(mask_coordinates_slum) < int(n_samples*percentage_slum):
+    mask_coordinates_slum = np.argwhere(mask_original_train_val == 1)
+    mask_coordinates_slum = mask_coordinates_slum[
+        (mask_coordinates_slum[:, 0] > size_tile // 2)
+        & (
+            mask_coordinates_slum[:, 0]
+            < mask_original_train_val.shape[0] - size_tile // 2
+        )
+        & (mask_coordinates_slum[:, 1] > size_tile // 2)
+        & (
+            mask_coordinates_slum[:, 1]
+            < mask_original_train_val.shape[1] - size_tile // 2
+        )
+    ]
+    if len(mask_coordinates_slum) < int(n_samples * percentage_slum):
         replace_bool = True
     else:
         replace_bool = False
     np.random.seed(0)
-    random_sample = np.random.choice(mask_coordinates_slum.shape[0], int(n_samples*percentage_slum), replace=replace_bool)
+    random_sample = np.random.choice(
+        mask_coordinates_slum.shape[0],
+        int(n_samples * percentage_slum),
+        replace=replace_bool,
+    )
     mask_coordinates_slum = mask_coordinates_slum[random_sample]
-    data_aug_slum = np.zeros((int(n_samples*percentage_slum),size_tile,size_tile, image_channels))
-    mask_aug_slum = np.zeros((int(n_samples*percentage_slum),size_tile,size_tile))
-    for i in range(int(n_samples*percentage_slum)):
-        data_aug_slum[i] = norm_train_val[mask_coordinates_slum[i,0]-size_tile//2:mask_coordinates_slum[i,0]+size_tile//2,mask_coordinates_slum[i,1]-size_tile//2:mask_coordinates_slum[i,1]+size_tile//2,:]
-        mask_aug_slum[i] = mask_original_train_val[mask_coordinates_slum[i,0]-size_tile//2:mask_coordinates_slum[i,0]+size_tile//2,mask_coordinates_slum[i,1]-size_tile//2:mask_coordinates_slum[i,1]+size_tile//2]
+    data_aug_slum = np.zeros(
+        (int(n_samples * percentage_slum), size_tile, size_tile, image_channels)
+    )
+    mask_aug_slum = np.zeros((int(n_samples * percentage_slum), size_tile, size_tile))
+    for i in range(int(n_samples * percentage_slum)):
+        data_aug_slum[i] = norm_train_val[
+            mask_coordinates_slum[i, 0]
+            - size_tile // 2 : mask_coordinates_slum[i, 0]
+            + size_tile // 2,
+            mask_coordinates_slum[i, 1]
+            - size_tile // 2 : mask_coordinates_slum[i, 1]
+            + size_tile // 2,
+            :,
+        ]
+        mask_aug_slum[i] = mask_original_train_val[
+            mask_coordinates_slum[i, 0]
+            - size_tile // 2 : mask_coordinates_slum[i, 0]
+            + size_tile // 2,
+            mask_coordinates_slum[i, 1]
+            - size_tile // 2 : mask_coordinates_slum[i, 1]
+            + size_tile // 2,
+        ]
         # plt.imshow(data_aug[1,:,:,0:3])
         # plt.imshow(mask_aug[1])
     mask_aug_slum = np.expand_dims(mask_aug_slum, axis=-1)
 
-    mask_coordinates_nonslum = np.argwhere(mask_original_train_val == 0)   
-    mask_coordinates_nonslum = mask_coordinates_nonslum[(mask_coordinates_nonslum[:,0]>size_tile//2) & (mask_coordinates_nonslum[:,0]<mask_original_train_val.shape[0]-size_tile//2) & (mask_coordinates_nonslum[:,1]>size_tile//2) & (mask_coordinates_nonslum[:,1]<mask_original_train_val.shape[1]-size_tile//2)]
-    if len(mask_coordinates_nonslum) < int(n_samples*(1-percentage_slum)):
+    mask_coordinates_nonslum = np.argwhere(mask_original_train_val == 0)
+    mask_coordinates_nonslum = mask_coordinates_nonslum[
+        (mask_coordinates_nonslum[:, 0] > size_tile // 2)
+        & (
+            mask_coordinates_nonslum[:, 0]
+            < mask_original_train_val.shape[0] - size_tile // 2
+        )
+        & (mask_coordinates_nonslum[:, 1] > size_tile // 2)
+        & (
+            mask_coordinates_nonslum[:, 1]
+            < mask_original_train_val.shape[1] - size_tile // 2
+        )
+    ]
+    if len(mask_coordinates_nonslum) < int(n_samples * (1 - percentage_slum)):
         replace_bool = True
     else:
         replace_bool = False
     np.random.seed(0)
-    random_sample = np.random.choice(mask_coordinates_nonslum.shape[0], int(n_samples*(1-percentage_slum)), replace=replace_bool)
+    random_sample = np.random.choice(
+        mask_coordinates_nonslum.shape[0],
+        int(n_samples * (1 - percentage_slum)),
+        replace=replace_bool,
+    )
     mask_coordinates_nonslum = mask_coordinates_nonslum[random_sample]
-    data_aug_nonslum = np.zeros((int(n_samples*(1-percentage_slum)),size_tile,size_tile, image_channels))
-    mask_aug_nonslum = np.zeros((int(n_samples*(1-percentage_slum)),size_tile,size_tile))
-    for i in range(int(n_samples*(1-percentage_slum))):
-        data_aug_nonslum[i] = norm_train_val[mask_coordinates_nonslum[i,0]-size_tile//2:mask_coordinates_nonslum[i,0]+size_tile//2,mask_coordinates_nonslum[i,1]-size_tile//2:mask_coordinates_nonslum[i,1]+size_tile//2,:]
-        mask_aug_nonslum[i] = mask_original_train_val[mask_coordinates_nonslum[i,0]-size_tile//2:mask_coordinates_nonslum[i,0]+size_tile//2,mask_coordinates_nonslum[i,1]-size_tile//2:mask_coordinates_nonslum[i,1]+size_tile//2]
+    data_aug_nonslum = np.zeros(
+        (int(n_samples * (1 - percentage_slum)), size_tile, size_tile, image_channels)
+    )
+    mask_aug_nonslum = np.zeros(
+        (int(n_samples * (1 - percentage_slum)), size_tile, size_tile)
+    )
+    for i in range(int(n_samples * (1 - percentage_slum))):
+        data_aug_nonslum[i] = norm_train_val[
+            mask_coordinates_nonslum[i, 0]
+            - size_tile // 2 : mask_coordinates_nonslum[i, 0]
+            + size_tile // 2,
+            mask_coordinates_nonslum[i, 1]
+            - size_tile // 2 : mask_coordinates_nonslum[i, 1]
+            + size_tile // 2,
+            :,
+        ]
+        mask_aug_nonslum[i] = mask_original_train_val[
+            mask_coordinates_nonslum[i, 0]
+            - size_tile // 2 : mask_coordinates_nonslum[i, 0]
+            + size_tile // 2,
+            mask_coordinates_nonslum[i, 1]
+            - size_tile // 2 : mask_coordinates_nonslum[i, 1]
+            + size_tile // 2,
+        ]
     mask_aug_nonslum = np.expand_dims(mask_aug_nonslum, axis=-1)
 
     data_aug = np.concatenate((data_aug_slum, data_aug_nonslum), axis=0)
@@ -341,8 +437,7 @@ filtered_locations = pd.read_csv("info_capitals.csv")
 
 filtered_locations = filtered_locations["location"].astype(str).values.tolist()
 
-for i in range(0,len(filtered_locations)):
-
+for i in range(0, len(filtered_locations)):
     LOCATION_ID = filtered_locations[i]
 
     image_original = skimage.io.imread(
@@ -367,7 +462,8 @@ for i in range(0,len(filtered_locations)):
             mask_original_train_val = mask_original[:, 0:middle_image_y]
 
         layer = tf.keras.layers.Normalization(
-        axis=-1)  # axis=-1 is the last dimension (channels)
+            axis=-1
+        )  # axis=-1 is the last dimension (channels)
         layer.adapt(image_original_train_val)
 
         norm_train_val = layer(image_original_train_val).numpy()
@@ -383,7 +479,9 @@ for i in range(0,len(filtered_locations)):
         # plt.imshow(mask_original_train_val)
         # plt.imshow(mask_original_test)
 
-        im_tiled, mask_tiled = tile_data(norm_train_val, mask_original_train_val, SIZE_TILE)
+        im_tiled, mask_tiled = tile_data(
+            norm_train_val, mask_original_train_val, SIZE_TILE
+        )
 
         # plt.figure(figsize=(15, 15))
         # plt.imshow(im_tiled[0,:,:,0:3])
@@ -405,7 +503,13 @@ for i in range(0,len(filtered_locations)):
             # stratify=indices_slums, # removed as some locations have few tiles non-slums
         )
 
-        im_aug, mask_aug = augment_data(norm_train_val, mask_original_train_val, size_tile=SIZE_TILE, n_samples=100, percentage_slum = 0.10)
+        im_aug, mask_aug = augment_data(
+            norm_train_val,
+            mask_original_train_val,
+            size_tile=SIZE_TILE,
+            n_samples=100,
+            percentage_slum=0.10,
+        )
 
         # plt.figure(figsize=(15, 15))
         # plt.imshow(im_aug[0,:,:,0:3])
@@ -421,7 +525,9 @@ for i in range(0,len(filtered_locations)):
         train = tf.data.Dataset.from_tensor_slices((X_train, y_train))
         val = tf.data.Dataset.from_tensor_slices((X_val, y_val))
 
-        normalised_image_tiled_test, mask_tiled_test = tile_data(norm_test, mask_original_test, SIZE_TILE)
+        normalised_image_tiled_test, mask_tiled_test = tile_data(
+            norm_test, mask_original_test, SIZE_TILE
+        )
 
         train_batches = (
             train.cache()
@@ -446,7 +552,8 @@ for i in range(0,len(filtered_locations)):
 
         callbacks = [
             tf.keras.callbacks.ModelCheckpoint(
-                str(dir_models) + "/model_cnn_weights_best_{}_half_{}.h5".format(LOCATION_ID, half),
+                str(dir_models)
+                + "/model_cnn_weights_best_{}_half_{}.h5".format(LOCATION_ID, half),
                 monitor="val_loss",
                 save_weights_only=True,
                 save_best_only=True,
@@ -574,11 +681,15 @@ for i in range(0,len(filtered_locations)):
 
         df_all_results = pd.concat([df_all_results, df_results], axis=0)
 
-        df_all_results.to_csv(str(dir_results)+"/cnn_7_bands_{}.csv".format(dt_string))
+        df_all_results.to_csv(
+            str(dir_results) + "/cnn_7_bands_{}.csv".format(dt_string)
+        )
 
         # Confusion matrix for the training data
 
-        normalised_image_tiled_train, mask_tiled_2 = tile_data(norm_train_val, mask_original_train_val, SIZE_TILE)
+        normalised_image_tiled_train, mask_tiled_2 = tile_data(
+            norm_train_val, mask_original_train_val, SIZE_TILE
+        )
 
         y_pred = model.predict(normalised_image_tiled_train, verbose=1)
         y_pred_flat = y_pred.ravel()
@@ -647,7 +758,11 @@ for i in range(0,len(filtered_locations)):
 
         if half == 0:
             y_pred = model.predict(normalised_image_tiled_test, verbose=1)
-            reduced_shape = (image_original_test.shape[0]//SIZE_TILE*SIZE_TILE, image_original_test.shape[1]//SIZE_TILE*SIZE_TILE, 1)          
+            reduced_shape = (
+                image_original_test.shape[0] // SIZE_TILE * SIZE_TILE,
+                image_original_test.shape[1] // SIZE_TILE * SIZE_TILE,
+                1,
+            )
             y_pred_2D_array_reduced_half_0 = reshape_combine(
                 y_pred.round(), reduced_shape
             )
@@ -673,7 +788,11 @@ for i in range(0,len(filtered_locations)):
 
         if half == 1:
             y_pred = model.predict(normalised_image_tiled_test, verbose=1)
-            reduced_shape = (image_original_test.shape[0]//SIZE_TILE*SIZE_TILE, image_original_test.shape[1]//SIZE_TILE*SIZE_TILE, 1)          
+            reduced_shape = (
+                image_original_test.shape[0] // SIZE_TILE * SIZE_TILE,
+                image_original_test.shape[1] // SIZE_TILE * SIZE_TILE,
+                1,
+            )
             y_pred_2D_array_reduced_half_1 = reshape_combine(
                 y_pred.round(), reduced_shape
             )
@@ -703,12 +822,11 @@ for i in range(0,len(filtered_locations)):
     mask_double_check = np.concatenate((mask_half_0, mask_half_1), axis=1)
 
     matplotlib.image.imsave(
-        str(dir_rasters) + "/mask_{}.png".format(LOCATION_ID), 
+        str(dir_rasters) + "/mask_{}.png".format(LOCATION_ID),
         mask_double_check,
     )
     matplotlib.image.imsave(
-        str(dir_rasters) + 
-        "/pred_cnn_{}.png".format(LOCATION_ID), y_pred_final
+        str(dir_rasters) + "/pred_cnn_{}.png".format(LOCATION_ID), y_pred_final
     )
 
     print(
