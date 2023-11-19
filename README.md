@@ -9,6 +9,11 @@ with Medium-Resolution Satellite Imagery".
 
 - The SlumMapVisionBR dataset is available at:
 
+### Census Data 
+
+- The original census information used to generate the ground-truth data was obtained on [this link](https://www.ibge.gov.br/geociencias/organizacao-do-territorio/tipologias-do-territorio/15788-aglomerados-subnormais.html) on 03-Nov-2019. 
+- The data of the central location of each municipality was obtained on [this link](https://www.ibge.gov.br/geociencias/organizacao-do-territorio/estrutura-territorial/27385-localidades.html?=&t=acesso-ao-produto) on 11-Mar-2022.
+
 ## Files
 
 `info_locations.csv` contains information about each location.<br>
@@ -47,10 +52,6 @@ with Medium-Resolution Satellite Imagery".
 `multispectral_halves.csv` Models are trained with half of the image and tested with the other half (both halves).<br>
 `visualisations` folder contains the visualisations of imagery, ground-truth and predictions for each location.<br>
 
-## Census Data 
-
-- The original census information used to generate the ground-truth data was obtained on [this link](https://www.ibge.gov.br/geociencias/organizacao-do-territorio/tipologias-do-territorio/15788-aglomerados-subnormais.html) on 03-Nov-2019. 
-- The data of the central location of each municipality was obtained on [this link](https://www.ibge.gov.br/geociencias/organizacao-do-territorio/estrutura-territorial/27385-localidades.html?=&t=acesso-ao-produto) on 11-Mar-2022.
 
 ## Citation
 
